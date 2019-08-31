@@ -8,9 +8,10 @@ class Move:
         self.startpoint = point
         self.endpoint = max(point - roll, 0)
         self.roll = roll
+        self.blot = blot
 
     def __str__(self):
-        if self.blot:
-            return str(self.startpoint) + "/" + str(self.endpoint) + "*"
-        else:
-            return str(self.startpoint) + "/" + str(self.endpoint)
+        start = "bar" if self.startpoint == 25 else str(self.startpoint)
+        finish = "off" if self.endpoint == 0 else str(self.endpoint)
+        blot = "*" if self.blot else ""
+        return start + "/" + finish + blot

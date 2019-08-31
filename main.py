@@ -9,42 +9,30 @@ from player import Player
 def main():
     env = Environment()
     print(env.board)
-    print(env.player_to_move)
 
-    white = Player()
-    black = Player()
+    white = Player(0)
+    black = Player(1)
 
-    # while not env.done:
-    #     if env.white_to_move:
-    #         action = white.action(env)
-    #     else:
-    #         action = black.action(env)
-    #     env.step(action)
-    #     if env.num_halfmoves >= config.play.max_game_length:
-    #         env.adjudicate()
+    while not env.done:
+        if env.player_to_move == 0:
+            print("-- White:")
+            roll = white.roll()
+            print("roll:", roll)
+            move = white.act(env.board, roll)
+            print("move:", move)
+        else:
+            print("-- Black:")
+            roll = white.roll()
+            print("roll:", roll)
+            move = black.action(env)
+            print("move:", move)
+        env.step(move)
+        print(env.board)
 
-    # gamma   = 0.9
-    # epsilon = .95
-
-    # trials  = 100
-    # trial_len = 500 # cap the number of rolls per game
-
-    # white = Player(config, pipes=pipes)
-    # black = Player(config, pipes=pipes)
-
-    # while not env.done:
-    #     if env.white_to_move:
-    #         action = white.action(env)
-    #     else:
-    #         action = black.action(env)
-    #     env.step(action)
-    #     if env.num_halfmoves >= config.play.max_game_length:
-    #         env.adjudicate()
-
-    # if env.winner == Winner.white:
+    # if env.winner == 0:
     #     black_win = -1
-    # elif env.winner == Winner.black:
-    #     black_win = 1
+    # elif env.winner == 0:
+    #     white_win = 0
     # else:
     #     black_win = 0
 

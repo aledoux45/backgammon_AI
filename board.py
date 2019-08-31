@@ -20,25 +20,93 @@ class Board:
         else:
             self.board = board
 
-    def _next_board(self, player, move):
+    def step(self, player, move):
         # player = 0 or 1
+        next_board = self.board.copy()
         other_player = 0 if player == 1 else 1
-
-    def valid_moves_1(self, player, roll):
+        next_board[player,move.startpoint] -= 1
+        next_board[player,move.endpoint] += 1
+        if move.blot:
+            next_board[other_player, 25-move.endpoint] += 1 # chcker to bar
+        return next_board
+        
+    def _legal_moves_1(self, player, roll):
         # player = 0 or 1
         # roll = 3
         other_player = 0 if player == 1 else 1
-        valid_moves = []
-        if self.board[player, 0] != 0: # checkers on bar
-            if self.board[other_player, roll] == 0:
-                valid_moves.append(Move(25,roll))
-            elif self.board[other_player, roll] == 1:
-                valid_moves.append(Move(25,roll,blot=True))
-            return valid_moves
+        legal_moves = []
 
-        for i in range(1, 25):
-            if self.board[player, i] != 0:
-                return
+        # Checkers on bar
+        if self.board[player, 0] != 0: 
+            if self.board[other_player, roll] == 0:
+                legal_moves.append(Move(25,roll))
+            elif self.board[other_player, roll] == 1:
+                legal_moves.append(Move(25,roll,blot=True))
+        else:
+            bearing_off = all(self.board[player, i] == 0 for i in range(7,26))
+            for i in range(1, 25):
+                if self.board[player, i] != 0:
+                    if i-roll > 0 and self.board[other_player, 25-i+roll] == 0:
+                        legal_moves.append(Move(i,roll))
+                    elif i-roll > 0 and self.board[other_player, 25-i+roll] == 1:
+                        legal_moves.append(Move(i,roll,blot=True))
+                    elif i-roll <= 0 and bearing_off:
+                        legal_moves.append(Move(i,roll))
+        return legal_moves
+
+    def legal_moves(self, player, rolls):
+        legal_moves = []
+        if len(rolls) == 2:
+            legal_moves1 = self._legal_moves_1(player, rolls[0])
+            for vm1 in legal_moves1:
+                next_board = self._next_board(player, vm1)
+                legal_moves2 = self._legal_moves_1(player, rolls[1])
+                for vm2 in legal_moves2:
+                    legal_moves.append([vm1,vm2])
+            # legal_moves1 = self._legal_moves_1(player, rolls[1])
+            # for vm1 in legal_moves1:
+            #     next_board = self._next_board(player, vm1)
+            #     legal_moves2 = self._legal_moves_1(player, rolls[0])
+            #     for vm2 in legal_moves2:
+            #         legal_moves.append([vm1,vm2])
+        else:
+            legal_moves1 = self._legal_moves_1(player, rolls[0])
+            for vm1 in legal_moves1:
+                next_board = self._next_board(player, vm1)
+                legal_moves2 = self._legal_moves_1(player, rolls[1])
+                for vm2 in legal_moves2:
+                    next_board = self._next_board(player, vm2)
+                    legal_moves3 = self._legal_moves_1(player, rolls[2])
+                    for vm3 in legal_moves3:
+                        next_board = self._next_board(player, vm3)
+                        legal_moves4 = self._legal_moves_1(player, rolls[3])
+                        for vm4 in legal_moves4:
+                            legal_moves.append([vm1,vm2,vm3,vm4])
+        return legal_moves
+
+    def __str__(self):
+        board_width = 12
+        board_height = 14
+        board_to_print = np.repeat(".", board_width * board_height).reshape(board_height,-1)
+        for i in range(1,13):
+            num_checkers = self.board[0,i]
+            if num_checkers != 0:
+                for c in range(num_checkers):
+                    board_to_print[board_height-1-c,12-i] = "O"
+            num_checkers = self.board[1,i]
+            if num_checkers != 0:
+                for c in range(num_checkers):
+                    board_to_print[c,12-i] = "X"
+        for i in range(13,25):
+            num_checkers = self.board[0,i]
+            if num_checkers != 0:
+                for c in range(num_checkers):
+                    board_to_print[c,i-13] = "O"
+            num_checkers = self.board[1,i]
+            if num_checkers != 0:
+                for c in range(num_checkers):
+                    board_to_print[board_height-1-c,i-13] = "X"
+        return str(board_to_print)
 
     def render(self):
         point_width = 32
@@ -79,6 +147,5 @@ class Board:
         mainloop()
 
 
-    def __str__(self):
-        return str(self.board)
+
 

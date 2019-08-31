@@ -3,11 +3,15 @@ Describes a player
 """
 
 import numpy as np
+from collections import deque
 
 
 class Player:
-    def __init__(self):
-        return
+    def __init__(self, color):
+        self.player = player
+        self.epsilon = 1.0
+        self.epsilon_decay = 0.995
+        self.memory = deque(maxlen=2000)
 
     def roll(self):
         roll = np.random.randint(1, 7, size=2)
@@ -19,8 +23,34 @@ class Player:
     def _build_model(self):
         return
 
-    def act(self, state, roll):
-        roll = np.random.randint(1, 7, size=2)
+    def act(self, board):
+        legal_moves = board.legal_moves(self.player, self.roll)
+        return np.random.choice(legal_moves, 1)
+
+        # self.epsilon *= self.epsilon_decay
+        # self.epsilon = max(self.epsilon_min, self.epsilon)
+        # if np.random.random() < self.epsilon:
+        #     return np.random.choice(legal_moves, 1)
+        # return np.argmax(self.model.predict(board)[0])
+
+    def remember(self, state, action, reward, new_state, done):
+        self.memory.append([state, action, reward, new_state, done])
+
+    def replay(self):
+        batch_size = 32
+        if len(self.memory) < batch_size: 
+            return
+
+        samples = np.random.choice(self.memory, batch_size)
+        for sample in samples:
+            state, action, reward, new_state, done = sample
+            target = self.target_model.predict(state)
+            if done:
+                target[0][action] = reward
+            else:
+                Q_future = max(self.target_model.predict(new_state)[0])
+                target[0][action] = reward + Q_future * self.gamma
+            self.model.fit(state, target, epochs=1, verbose=0)
 
 
 

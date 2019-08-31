@@ -1,3 +1,7 @@
 {
-    "python.pythonPath": "/anaconda3/envs/backgammon_env/bin/python"
+    "python.pythonPath": "/anaconda3/envs/backgammon_env/bin/python",
+    "files.exclude": {
+        "**/*.pyc": true
+    }
 }
+
