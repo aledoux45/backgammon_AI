@@ -8,34 +8,40 @@ from player import Player
 
 def main():
     env = Environment()
-    print(env.board)
 
     white = Player(0)
     black = Player(1)
 
-    while not env.done:
-        if env.player_to_move == 0:
-            print("-- White:")
-            roll = white.roll()
-            print("roll:", roll)
-            move = white.act(env.board, roll)
-            print("move:", move)
-        else:
-            print("-- Black:")
-            roll = white.roll()
-            print("roll:", roll)
-            move = black.action(env)
-            print("move:", move)
-        env.step(move)
+    white_win = 0
+
+    for game in range(100):
+        env.reset()
         print(env.board)
+        while not env.done:
+            if env.player_to_move == 0:
+                print("-- White:")
+                roll = white.roll()
+                print("roll:", roll)
+                action = white.act(env.board, roll)
+                print("move:", action)
+            else:
+                print("-- Black:")
+                roll = white.roll()
+                print("roll:", roll)
+                action = black.act(env.board, roll)
+                print("move:", action)
+            env.step(action)
+            print(env.board)
 
-    # if env.winner == 0:
-    #     black_win = -1
-    # elif env.winner == 0:
-    #     white_win = 0
-    # else:
-    #     black_win = 0
+        if env.winner == 0:
+            white_win += 1
+            print("White wins!")
+        elif env.winner == 1:
+            print("Black wins!")
+        else:
+            raise ValueError("No winner")
 
+    print("White wins percentage:", white_win/100)
     # black.finish_game(black_win)
     # white.finish_game(-black_win)
 

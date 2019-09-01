@@ -7,7 +7,7 @@ from collections import deque
 
 
 class Player:
-    def __init__(self, color):
+    def __init__(self, player):
         self.player = player
         self.epsilon = 1.0
         self.epsilon_decay = 0.995
@@ -23,9 +23,16 @@ class Player:
     def _build_model(self):
         return
 
-    def act(self, board):
-        legal_moves = board.legal_moves(self.player, self.roll)
-        return np.random.choice(legal_moves, 1)
+    def act(self, board, roll):
+        legal_moves = board.legal_moves(self.player, roll)
+        print("legal moves:")
+        for lm in legal_moves:
+            print(lm)
+        if len(legal_moves) == 0:
+            return None
+        else:
+            choice = np.random.choice(len(legal_moves), 1)[0]
+            return legal_moves[choice]
 
         # self.epsilon *= self.epsilon_decay
         # self.epsilon = max(self.epsilon_min, self.epsilon)
