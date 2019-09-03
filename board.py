@@ -44,6 +44,9 @@ class Board:
                 return False
         return True
 
+    def flat(self):
+        return np.expand_dims(self.board.reshape(-1), axis=0) 
+
     def step(self, player, move):
         # player = 0 or 1
         other_player = 0 if player == 1 else 1
@@ -54,15 +57,6 @@ class Board:
         if move.blot:
             next_board[other_player, 25-move.endpoint] -= 1
             next_board[other_player, 25] += 1 # chcker to bar
-        return Board(next_board)
-
-    def steps(self, player, moves):
-        # player = 0 or 1
-        next_board = self.board.copy()
-
-        for move in moves:
-            next_board = next_board.step(player, move)
-
         return Board(next_board)
 
     def _legal_moves_1(self, player, roll):

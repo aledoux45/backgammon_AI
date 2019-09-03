@@ -4,86 +4,71 @@ Backgammon AI
 
 from environment import Environment
 from player import Player
+from datetime import datetime
 
 
 def main():
     env = Environment()
 
-    white = Player(0)
-    black = Player(1)
+    white = Player(0, env)
+    black = Player(1, env)
 
     white_win = 0
+    num_trials = 100
+    t0 = datetime.now()
 
-    for game in range(100):
+    for game in range(num_trials):
         env.reset()
-        print(env.board)
+        cur_board = env.board
+        print(cur_board)
+
+        board_history = []
+
         while not env.done:
             if env.player_to_move == 0:
                 print("-- White:")
                 roll = white.roll()
                 print("roll:", roll)
-                action = white.act(env.board, roll)
+                action = white.act(cur_board, roll)
                 print("move:", action)
             else:
                 print("-- Black:")
                 roll = white.roll()
                 print("roll:", roll)
-                action = black.act(env.board, roll)
+                action = black.act(cur_board, roll)
                 print("move:", action)
-            env.step(action)
-            print(env.board)
+
+            board_history.append(env.board)
+            cur_board = env.step(action)
+
+            print(cur_board)
 
         if env.winner == 0:
             white_win += 1
             print("White wins!")
         elif env.winner == 1:
             print("Black wins!")
+
+        # Remember each board
+        for i in range(len(board_history)-1):
+            if env.winner == 0:
+                white.remember(board_history[i], 1, board_history[i+1], False)
+                black.remember(board_history[i], -1, board_history[i+1], False)
+            else:
+                white.remember(board_history[i], -1, board_history[i+1], False)
+                black.remember(board_history[i], 1, board_history[i+1], False)
+        if env.winner == 0:
+            white.remember(board_history[-1], 1, None, True)
+            black.remember(board_history[-1], -1, None, True)
         else:
-            raise ValueError("No winner")
+            white.remember(board_history[-1], -1, None, True)
+            black.remember(board_history[-1], 1, None, True)
 
-    print("White wins percentage:", white_win/100)
-    # black.finish_game(black_win)
-    # white.finish_game(-black_win)
+        white.replay(32)
+        black.replay(32)
 
-    # data = []
-    # for i in range(len(white.moves)):
-    #     data.append(white.moves[i])
-    #     if i < len(black.moves):
-    #         data.append(black.moves[i])
-
-    # cur.append(pipes)
-    
-    # for trial in range(trials):
-    #     # cur_state = env.reset().reshape(1,2)
-    #     cur_state = env.reset()
-    #     done = False
-    #     while not done:
-    #         # player 1
-    #         action = player1.act(cur_state)
-    #         new_state, reward, done, _ = env.step(action)
-
-    #         # reward = reward if not done else -20
-    #         # new_state = new_state.reshape(1,2)
-    #         player1.remember(cur_state, action, reward, new_state, done)
-            
-    #         player1.replay()       # internally iterates default (prediction) model
-    #         player1.target_train() # iterates target model
-
-    #         cur_state = new_state
-
-    #         # player 2
-    #         action = player1.act(cur_state)
-    #         new_state, reward, done, _ = env.step(action)
-
-    #         # reward = reward if not done else -20
-    #         # new_state = new_state.reshape(1,2)
-    #         player1.remember(cur_state, action, reward, new_state, done)
-            
-    #         player1.replay()       # internally iterates default (prediction) model
-    #         player1.target_train() # iterates target model
-
-    #         cur_state = new_state
-
+    print("White wins percentage:", white_win/num_trials)
+    print("Time:", datetime.now() - t0)
 
 if __name__ == "__main__":
     main()
