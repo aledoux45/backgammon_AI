@@ -24,8 +24,9 @@ class Move:
 
 
 class Moves:
-    def __init__(self, moves):
+    def __init__(self, moves, rolls):
         self.moves = moves # list of Move objects
+        self.rolls = rolls
 
     def __eq__(self, other_moves):
         if len(self.moves) != len(other_moves):
@@ -55,7 +56,26 @@ class Moves:
         else:
             raise StopIteration
 
+    def count(self):
+        counts = {}
+        for move1 in self.moves:
+            counts[str(move1)] = 0
+            for move2 in self.moves:
+                if move1 == move2:
+                    counts[str(move1)] += 1
+        return counts
+
     def __str__(self):
-        return " ".join([str(move) for move in self.moves])
+        moves_to_print = ""
+        counts = self.count()
+        if len(self.moves) == 0:
+            moves_to_print = " (no play)"
+        else:
+            for move in counts:
+                if counts[str(move)] > 1:
+                    moves_to_print += " " + str(move) + "(" + str(counts[str(move)]) + ")"
+                else:
+                    moves_to_print += " " + str(move)
+        return str(self.rolls[0]) + "-" + str(self.rolls[1]) + ":" + moves_to_print
 
     

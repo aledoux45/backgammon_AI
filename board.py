@@ -93,9 +93,9 @@ class Board:
                 lm2 = next_board._legal_moves_1(player, rolls[1])
                 if len(lm2) > 0:
                     for m2 in lm2:
-                        legal_moves.append(Moves([m1, m2]))
+                        legal_moves.append(Moves([m1, m2], rolls))
                 else:
-                    legal_moves.append(Moves([m1]))
+                    legal_moves.append(Moves([m1], rolls))
             # second order
             lm1 = self._legal_moves_1(player, rolls[1])
             for m1 in lm1:
@@ -103,9 +103,9 @@ class Board:
                 lm2 = next_board._legal_moves_1(player, rolls[0])
                 if len(lm2) > 0:
                     for m2 in lm2:
-                        legal_moves.append(Moves([m1, m2]))
+                        legal_moves.append(Moves([m1, m2], rolls))
                 else:
-                    legal_moves.append(Moves([m1]))
+                    legal_moves.append(Moves([m1], rolls))
         else: # doubles
             legal_moves1 = self._legal_moves_1(player, rolls[0])
             for vm1 in legal_moves1:
@@ -121,13 +121,13 @@ class Board:
                                 legal_moves4 = next_board3._legal_moves_1(player, rolls[3])
                                 if len(legal_moves4) > 0:
                                     for vm4 in legal_moves4:
-                                        legal_moves.append(Moves([vm1,vm2,vm3,vm4]))
+                                        legal_moves.append(Moves([vm1,vm2,vm3,vm4], rolls))
                                 else:
-                                    legal_moves.append(Moves([vm1,vm2,vm3]))
+                                    legal_moves.append(Moves([vm1,vm2,vm3], rolls))
                         else:
-                            legal_moves.append(Moves([vm1,vm2]))
+                            legal_moves.append(Moves([vm1,vm2], rolls))
                 else:
-                    legal_moves.append(Moves([vm1]))
+                    legal_moves.append(Moves([vm1], rolls))
         # only keep unique moves
         unique_legal_moves = []
         for lm in legal_moves:

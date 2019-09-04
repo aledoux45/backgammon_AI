@@ -23,6 +23,7 @@ def main():
         print(cur_board)
 
         board_history = []
+        moves_history = []
 
         while not env.done:
             if env.player_to_move == 0:
@@ -39,6 +40,7 @@ def main():
                 print("move:", action)
 
             board_history.append(env.board)
+            moves_history.append(action)
             cur_board = env.step(action)
 
             print(cur_board)
@@ -49,20 +51,29 @@ def main():
         elif env.winner == 1:
             print("Black wins!")
 
+        # Display game moves
+        i=0
+        while i < len(moves_history):
+            if len(moves_history) == i+1:
+                print(str(i) + "/ " + str(moves_history[i]))
+            else:
+                print(str(i) + "/ " + str(moves_history[i]) + "\t" + str(moves_history[i+1]))
+            i+=2
+
         # Remember each board
         for i in range(len(board_history)-1):
             if env.winner == 0:
-                white.remember(board_history[i], 1, board_history[i+1], False)
-                black.remember(board_history[i], -1, board_history[i+1], False)
+                white.remember(board_history[i], env.score_scale, board_history[i+1], False)
+                black.remember(board_history[i], -env.score_scale, board_history[i+1], False)
             else:
-                white.remember(board_history[i], -1, board_history[i+1], False)
-                black.remember(board_history[i], 1, board_history[i+1], False)
+                white.remember(board_history[i], -env.score_scale, board_history[i+1], False)
+                black.remember(board_history[i], env.score_scale, board_history[i+1], False)
         if env.winner == 0:
-            white.remember(board_history[-1], 1, None, True)
-            black.remember(board_history[-1], -1, None, True)
+            white.remember(board_history[-1], env.score_scale, None, True)
+            black.remember(board_history[-1], -env.score_scale, None, True)
         else:
-            white.remember(board_history[-1], -1, None, True)
-            black.remember(board_history[-1], 1, None, True)
+            white.remember(board_history[-1], -env.score_scale, None, True)
+            black.remember(board_history[-1], env.score_scale, None, True)
 
         white.replay(32)
         black.replay(32)
