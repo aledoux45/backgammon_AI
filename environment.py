@@ -8,16 +8,22 @@ from board import Board
 class Environment:
     def __init__(self):
         self.board = Board()
+        self.board_history = []
+        self.moves_history = []
         self.done = False
-        self.score_scale = 1
+        self.score = 1
         self.winner = None
         self.loser = None
         self.player_to_move = np.random.randint(2, size=1)[0]
 
     def reset(self):
         self.board = Board()
+        self.board_history = []
+        self.moves_history = []
         self.done = False
+        self.score = 1
         self.winner = None
+        self.loser = None
         self.player_to_move = np.random.randint(2, size=1)[0]
 
     def step(self, action):
@@ -31,8 +37,48 @@ class Environment:
             self.winner = self.player_to_move
             self.loser = 0 if self.winner == 1 else 1
             if self.board.board[self.loser, 0] == 0:
-                self.score_scale *= 2 # gammon
+                self.score *= 2 # gammon
             if self.board.board[self.loser, 0] == 0 and self.board.board[self.loser, 19:].sum() > 1:
-                self.score_scale *= 3 # backgammon
+                self.score *= 3 # backgammon
         self.player_to_move = 0 if self.player_to_move == 1 else 1
         return self.board
+
+    def play_game(self, player1, player2):
+        self.reset()
+        cur_board = self.board
+        print(cur_board)
+
+        while not self.done:
+            if self.player_to_move == 0:
+                print("-- White:")
+                roll = player1.roll()
+                print("roll:", roll)
+                action = player1.act(cur_board, roll)
+                print("move:", action)
+            else:
+                print("-- Black:")
+                roll = player2.roll()
+                print("roll:", roll)
+                action = player2.act(cur_board, roll)
+                print("move:", action)
+
+            self.board_history.append(self.board.copy())
+            self.moves_history.append(action)
+            cur_board = self.step(action)
+            print(cur_board)
+
+        # Print game
+        if self.winner == 0:
+            print("White wins!")
+        elif self.winner == 1:
+            print("Black wins!")
+
+        # Print game moves
+        i=0
+        while i < len(self.moves_history):
+            if len(self.moves_history) == i+1:
+                print(str(i) + "/ " + str(self.moves_history[i]))
+            else:
+                print(str(i) + "/ " + str(self.moves_history[i]) + "\t" + str(self.moves_history[i+1]))
+            i+=2
+        

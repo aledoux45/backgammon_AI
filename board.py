@@ -44,8 +44,14 @@ class Board:
                 return False
         return True
 
+    def copy(self):
+        return Board(self.board)
+        
     def flat(self):
         return np.expand_dims(self.board.reshape(-1), axis=0) 
+    
+    def flip(self):
+        return Board(np.flip(self.board, axis=0))
 
     def step(self, player, move):
         # player = 0 or 1

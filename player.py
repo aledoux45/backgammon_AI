@@ -5,7 +5,7 @@ Describes a player
 import numpy as np
 from collections import deque
 import random
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Dense
 from keras.optimizers import Adam
 from move import Moves
@@ -34,12 +34,15 @@ class Player:
         model = Sequential()
         state_shape = self.env.board.board.reshape(-1).shape
         print("Shape:",state_shape)
-        model.add(Dense(24, input_shape=state_shape, activation="tanh"))
-        model.add(Dense(24, activation="tanh"))
-        model.add(Dense(24, activation="tanh"))
+        model.add(Dense(40, input_shape=state_shape, activation="tanh"))
+        # model.add(Dense(24, activation="tanh"))
+        # model.add(Dense(24, activation="tanh"))
         model.add(Dense(1))
         model.compile(loss="mean_squared_error", optimizer=Adam(lr=self.learning_rate))
-
+        # model.add(Dense(4, activation="softmax"))
+        # model.compile(optimizer='rmsprop',
+        #               loss='categorical_crossentropy',
+        #               metrics=['accuracy'])
         model.summary()
         return model
 
@@ -69,6 +72,24 @@ class Player:
 
     def remember(self, state, reward, next_state, done):
         self.memory.append([state, reward, next_state, done])
+
+    def remember_game(self, board_history, winner, score):
+        # winner = 0 or 1
+        # board_history = list of Board objects
+        for i in range(len(board_history)-1):
+            if winner == self.player:
+                self.remember(board_history[i], score, board_history[i+1], False)
+                self.remember(board_history[i].flip(), -score, board_history[i+1].flip(), False)
+            else:
+                self.remember(board_history[i], -score, board_history[i+1], False)
+                self.remember(board_history[i].flip(), score, board_history[i+1].flip(), False)
+        # last board        
+        if winner == self.player:
+            self.remember(board_history[-1], score, None, True)
+            self.remember(board_history[-1].flip(), -score, None, True)
+        else:
+            self.remember(board_history[-1], -score, None, True)
+            self.remember(board_history[-1].flip(), score, None, True)
         
     def replay(self, batch_size=32):
         if len(self.memory) < batch_size: 
@@ -82,3 +103,9 @@ class Player:
                 Q_future = self.model.predict(next_board.flat())[0][0]
                 target = reward + Q_future * self.gamma
             self.model.fit(board.flat(), np.array([[target]]), epochs=1, verbose=0)
+
+    def load_model(self, filename):
+        self.model = load_model(filename)
+
+    def save_model(self, outputfile):
+        self.model.save(outputfile)
