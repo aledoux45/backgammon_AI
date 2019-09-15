@@ -12,17 +12,18 @@ from move import Moves
 
 
 class Player:
-    def __init__(self, player, env):
+    def __init__(self, player, env, random=False):
         self.player = player
         self.env = env
+        self.random = random
         self.epsilon = 1.0
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.learning_rate = 0.005
         self.gamma = 0.85
         self.memory = deque(maxlen=2000)
-        self.model = self._build_model()
-
+        self.model = self._build_model() if not self.random else None
+        
     def roll(self):
         roll = np.random.randint(1, 7, size=2)
         if roll[0] == roll[1]:
@@ -33,7 +34,7 @@ class Player:
     def _build_model(self):
         model = Sequential()
         state_shape = self.env.board.board.reshape(-1).shape
-        print("Shape:",state_shape)
+        # print("Shape:",state_shape)
         model.add(Dense(40, input_shape=state_shape, activation="tanh"))
         # model.add(Dense(24, activation="tanh"))
         # model.add(Dense(24, activation="tanh"))
@@ -53,7 +54,7 @@ class Player:
         # add randomness of choice
         self.epsilon *= self.epsilon_decay
         self.epsilon = max(self.epsilon_min, self.epsilon)
-        if np.random.random() < self.epsilon:
+        if np.random.random() < self.epsilon or self.random:
             choice = random.sample(legal_moves, 1)[0]
             return choice
         else: # choose board with highest score
@@ -62,8 +63,8 @@ class Player:
                 for move in lm:
                     next_board = board.step(self.player, move)
                 score = self.model.predict(next_board.flat())[0][0]
-                print("LM:", lm)
-                print("Score:", score)
+                # print("LM:", lm)
+                # print("Score:", score)
                 scores.append(score)
             return legal_moves[np.argmax(scores)]
 
