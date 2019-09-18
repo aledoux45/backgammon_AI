@@ -18,8 +18,8 @@ class Player:
         self.random = random
         self.epsilon = 1.0
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.995
-        self.learning_rate = 0.005
+        self.epsilon_decay = 0.99
+        self.learning_rate = 0.001
         self.gamma = 0.85
         self.memory = deque(maxlen=2000)
         self.model = self._build_model() if not self.random else None
@@ -52,8 +52,7 @@ class Player:
         if len(legal_moves) == 0:
             return Moves([], rolls)
         # add randomness of choice
-        self.epsilon *= self.epsilon_decay
-        self.epsilon = max(self.epsilon_min, self.epsilon)
+
         if np.random.random() < self.epsilon or self.random:
             choice = random.sample(legal_moves, 1)[0]
             return choice
@@ -80,19 +79,21 @@ class Player:
         for i in range(len(board_history)-1):
             if winner == self.player:
                 self.remember(board_history[i], score, board_history[i+1], False)
-                self.remember(board_history[i].flip(), -score, board_history[i+1].flip(), False)
+                # self.remember(board_history[i].flip(), -score, board_history[i+1].flip(), False)
             else:
                 self.remember(board_history[i], -score, board_history[i+1], False)
-                self.remember(board_history[i].flip(), score, board_history[i+1].flip(), False)
+                # self.remember(board_history[i].flip(), score, board_history[i+1].flip(), False)
         # last board        
         if winner == self.player:
             self.remember(board_history[-1], score, None, True)
-            self.remember(board_history[-1].flip(), -score, None, True)
+            # self.remember(board_history[-1].flip(), -score, None, True)
         else:
             self.remember(board_history[-1], -score, None, True)
-            self.remember(board_history[-1].flip(), score, None, True)
+            # self.remember(board_history[-1].flip(), score, None, True)
         
     def replay(self, batch_size=32):
+        self.epsilon *= self.epsilon_decay
+        self.epsilon = max(self.epsilon_min, self.epsilon)
         if len(self.memory) < batch_size: 
             return
         samples = random.sample(self.memory, batch_size)
@@ -107,6 +108,8 @@ class Player:
 
     def load_model(self, filename):
         self.model = load_model(filename)
+        self.random = False
+        self.epsilon = 0
 
     def save_model(self, outputfile):
         self.model.save(outputfile)
