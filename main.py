@@ -17,10 +17,10 @@ def main():
     black = Player(1, env)
     # random_black = Player(1, env, random=True)
 
-    num_games = 5000
+    num_games = 20000
     num_test_games = 30
-    test_frequency = 100
-    generation_frequency = 1000
+    test_frequency = 200
+    generation_frequency = 2000
     outputfolder="run2"
     
     os.makedirs(outputfolder, exist_ok=True)
@@ -53,10 +53,10 @@ def main():
         black.remember_game(env.board_history, env.winner, env.score)
 
         # Replay boards from the past
-        white.replay(64)
-        black.replay(64)
+        white.replay(300) # ~ 3games of 100 moves
+        black.replay(300)
 
-        print("Game", game, " | Nb moves", len(env.board_history), " | winner", env.winner)
+        print("Game", game, " | Nb moves", len(env.board_history), " | winner", env.winner, " | score", env.score)
 
     # Save last generation        
     print("Saving generation", str(generation))
@@ -67,7 +67,7 @@ def main():
     for gen in performance:
         plt.plot(list(performance[gen].keys()), list(performance[gen].values()), label="Gen"+str(gen))
     plt.ylim((0,1))
-    plt.xlabel("Test")
+    plt.xlabel("Game")
     plt.ylabel("Performance")
     plt.title("Evolution of performance of player vs other generations")
     plt.legend()
@@ -75,7 +75,6 @@ def main():
     plt.savefig(outputfolder+"/perfEvolution.png")
 
     # Final output
-    print("Success evolution:", performance)
     print("Time:", datetime.now() - t0)
 
 

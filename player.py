@@ -16,12 +16,12 @@ class Player:
         self.player = player
         self.env = env
         self.random = random
-        self.epsilon = 1.0
-        self.epsilon_min = 0.01
+        self.epsilon = 1.0  # exploration rate
+        self.epsilon_min = 0.01 # min exploration rate
         self.epsilon_decay = 0.99
-        self.learning_rate = 0.001
-        self.gamma = 0.85
-        self.memory = deque(maxlen=2000)
+        self.learning_rate = 0.005
+        self.gamma = 0.85  # discount rate
+        self.memory = deque(maxlen=10000) # ~ last 100games of 100 moves
         self.model = self._build_model() if not self.random else None
         
     def roll(self):
@@ -35,15 +35,11 @@ class Player:
         model = Sequential()
         state_shape = self.env.board.board.reshape(-1).shape
         # print("Shape:",state_shape)
-        model.add(Dense(40, input_shape=state_shape, activation="tanh"))
+        model.add(Dense(40, input_shape=state_shape, activation="relu"))
         # model.add(Dense(24, activation="tanh"))
         # model.add(Dense(24, activation="tanh"))
         model.add(Dense(1))
         model.compile(loss="mean_squared_error", optimizer=Adam(lr=self.learning_rate))
-        # model.add(Dense(4, activation="softmax"))
-        # model.compile(optimizer='rmsprop',
-        #               loss='categorical_crossentropy',
-        #               metrics=['accuracy'])
         model.summary()
         return model
 
@@ -52,7 +48,6 @@ class Player:
         if len(legal_moves) == 0:
             return Moves([], rolls)
         # add randomness of choice
-
         if np.random.random() < self.epsilon or self.random:
             choice = random.sample(legal_moves, 1)[0]
             return choice
