@@ -4,4 +4,6 @@ The neural network architecture can be modified in the "player.py" files
 
 Note: the doubling cube has not been implemented yet
 
-Inspiration: https://keon.io/deep-q-learning
+Explanation of RL: https://keon.io/deep-q-learning
+
+Backgammon paper: https://bkgm.com/articles/tesauro/ProgrammingBackgammon.pdf

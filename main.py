@@ -53,8 +53,8 @@ def main():
         black.remember_game(env.board_history, env.winner, env.score)
 
         # Replay boards from the past
-        white.replay(300) # ~ 3games of 100 moves
-        black.replay(300)
+        white.replay(200) # ~ 2 whole games of 100 moves
+        black.replay(200)
 
         print("Game", game, " | Nb moves", len(env.board_history), " | winner", env.winner, " | score", env.score)
 
