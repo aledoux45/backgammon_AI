@@ -20,7 +20,14 @@ class Board:
             self.board[:,6] = [5,5]
         else:
             self.board = board
-        
+    
+    def reset(self):
+        self.board = np.zeros((2,26), dtype=np.int32)
+        self.board[:,24] = [2,2]
+        self.board[:,13] = [5,5]
+        self.board[:,8] = [3,3]
+        self.board[:,6] = [5,5]
+
     def is_game_over(self):
         if self.board[0,1:].sum() == 0 or self.board[1,1:].sum() == 0:
             return True

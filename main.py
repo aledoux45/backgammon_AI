@@ -15,7 +15,8 @@ ai.load_model("run3/gen_10.h5")
 @app.route('/')
 def home():
     global board
-    board = Board()
+    global ai_can_move
+    board.reset()
     ai_can_move = False
     return render_template("home.html")
 
