@@ -1,82 +1,72 @@
-"""
-Backgammon AI
-"""
-
-from environment import Environment
+from flask import Flask, render_template, request
+from os import environ
+from board import Board
+from move import Move
 from player import Player
-from datetime import datetime
-from collections import defaultdict
-import matplotlib.pyplot as plt
-import os
+import numpy as np
 
+app = Flask(__name__)
 
-def main():
-    env = Environment()
+board = Board()
+ai_can_move = False
+ai = Player(1, random=False)
+ai.load_model("run3/gen_10.h5")
 
-    white = Player(0, env)
-    black = Player(1, env)
-    # random_black = Player(1, env, random=True)
+@app.route('/')
+def home():
+    global board
+    board = Board()
+    ai_can_move = False
+    return render_template("home.html")
 
-    num_games = 20000
-    num_test_games = 30
-    test_frequency = 200
-    generation_frequency = 2000
-    outputfolder="run2"
-    
-    os.makedirs(outputfolder, exist_ok=True)
-    performance = defaultdict(dict)
-    generation = 0
+@app.route('/game', methods=['GET','POST'])
+def start_game():
+    global board
+    global ai_can_move
+    # Your move, you are player 0
+    if request.method == 'POST':
+        player_move = request.form['move']
+        # Check if valid entry:
+        if "/" not in player_move:
+            return render_template("game.html", board=board.render_ui(), error_message="Your move must be in the form of number/number such as 24/22")
+        start = player_move.split("/")[0]
+        finish = player_move.split("/")[1]
+        blot = False
+        start = 25 if start == "bar" else int(start)
+        finish = 0 if finish == "off" else int(finish)
+        roll = start - finish
+        bearing_off = board.board[0, 7:].sum() == 0
+        # Check if legal move:
+        if start < 0 or start > 25 or finish < 0 or finish > 25:
+            return render_template("game.html", board=board.render_ui(), error_message="Start and finish points must be in the interval [0,25]")
+        if start <= finish:
+            return render_template("game.html", board=board.render_ui(), error_message="Start point must be greater than finish point")
+        elif roll > 6:
+            return render_template("game.html", board=board.render_ui(), error_message="You cannot move a checker more than 6 points at a time (roll of dice)")
+        elif start != 25 and board.board[0, 25] > 0:
+            return render_template("game.html", board=board.render_ui(), error_message="You have a checker on the bar")
+        elif board.board[0, start] == 0:
+            return render_template("game.html", board=board.render_ui(), error_message="You don't have any checker on this point")
+        elif not bearing_off and finish == 0:
+            return render_template("game.html", board=board.render_ui(), error_message="You cannot bear off yet")
+        elif board.board[1, 25-finish] > 1:
+            return render_template("game.html", board=board.render_ui(), error_message="Your opponent has checkers on this point")
+        # Check if blot
+        if board.board[1, 25-finish] == 1:
+            blot = True
+        move = Move(start, roll, blot=blot)
+        board = board.step(0, move)
+        return render_template("game.html", board=board.render_ui(), error_message=None)
+    # AI plays
+    if ai_can_move:
+        if board.is_game_over():
+            return render_template("game.html", board=board.render_ui(), error_message="Game over!")
+        roll = ai.roll()
+        ai_action = ai.act(board, roll)
+        for ai_move in ai_action:
+            board = board.step(ai.player, ai_move)
+    ai_can_move = True
+    return render_template("game.html", board=board.render_ui(), error_message=None)
 
-    t0 = datetime.now()
-
-    for game in range(num_games):
-        # Save generation
-        if game % generation_frequency == 0: # Save generation
-            print("Saving generation", str(generation))
-            white.save_model(outputfolder+"/gen_"+str(generation)+".h5")
-            black.save_model(outputfolder+"/gen_"+str(generation)+".h5")
-            generation += 1
-
-        # Check performance
-        if game % test_frequency == 0:
-            print("Testing current generation")
-            reference_black = Player(1, env, random=True)
-            for gen in range(generation):
-                reference_black.load_model(outputfolder+"/gen_"+str(gen)+".h5")
-                performance[gen][game] = env.check_performance(white, reference_black, num_test_games)
-        
-        # Play game
-        env.play_game(white, black, verbose=False)
-
-        # Remember the game
-        white.remember_game(env.board_history, env.winner, env.score)
-        black.remember_game(env.board_history, env.winner, env.score)
-
-        # Replay boards from the past
-        white.replay(200) # ~ 2 whole games of 100 moves
-        black.replay(200)
-
-        print("Game", game, " | Nb moves", len(env.board_history), " | winner", env.winner, " | score", env.score)
-
-    # Save last generation        
-    print("Saving generation", str(generation))
-    white.save_model(outputfolder+"/gen_"+str(generation)+".h5")
-    black.save_model(outputfolder+"/gen_"+str(generation)+".h5")
-
-    # Plot performance evolution
-    for gen in performance:
-        plt.plot(list(performance[gen].keys()), list(performance[gen].values()), label="Gen"+str(gen))
-    plt.ylim((0,1))
-    plt.xlabel("Game")
-    plt.ylabel("Performance")
-    plt.title("Evolution of performance of player vs other generations")
-    plt.legend()
-    plt.grid()
-    plt.savefig(outputfolder+"/perfEvolution.png")
-
-    # Final output
-    print("Time:", datetime.now() - t0)
-
-
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', debug=True) # port=environ.get("PORT", 5000), 

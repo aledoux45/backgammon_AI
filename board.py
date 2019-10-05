@@ -146,30 +146,33 @@ class Board:
                 unique_legal_moves.append(lm)
         return unique_legal_moves
 
+    def render_ui(self):
+        board_width = 13
+        board_height = 14 ## TODO: case where checkers overlap...
+        board_to_print = np.repeat(".", board_height * board_width).reshape(board_height, -1)
+        for i in range(1,13):
+            num_checkers = self.board[0,i]
+            if num_checkers != 0:
+                for c in range(num_checkers):
+                    board_to_print[board_height-1-c,12-i] = "O"
+            num_checkers = self.board[1,i]
+            if num_checkers != 0:
+                for c in range(num_checkers):
+                    board_to_print[c,12-i] = "X"
+        for i in range(13,26):
+            num_checkers = self.board[0,i]
+            if num_checkers != 0:
+                for c in range(num_checkers):
+                    board_to_print[c,i-13] = "O"
+            num_checkers = self.board[1,i]
+            if num_checkers != 0:
+                for c in range(num_checkers):
+                    board_to_print[board_height-1-c,i-13] = "X"
+        return board_to_print
+
     def __str__(self):
-        return str(self.board)
-        # board_width = 12
-        # board_height = 14 ## TODO: case where checkers overlap...
-        # board_to_print = np.repeat(".", board_height * board_width).reshape(board_height, -1)
-        # for i in range(1,13):
-        #     num_checkers = self.board[0,i]
-        #     if num_checkers != 0:
-        #         for c in range(num_checkers):
-        #             board_to_print[board_height-1-c,12-i] = "O"
-        #     num_checkers = self.board[1,i]
-        #     if num_checkers != 0:
-        #         for c in range(num_checkers):
-        #             board_to_print[c,12-i] = "X"
-        # for i in range(13,25):
-        #     num_checkers = self.board[0,i]
-        #     if num_checkers != 0:
-        #         for c in range(num_checkers):
-        #             board_to_print[c,i-13] = "O"
-        #     num_checkers = self.board[1,i]
-        #     if num_checkers != 0:
-        #         for c in range(num_checkers):
-        #             board_to_print[board_height-1-c,i-13] = "X"
-        # return str(board_to_print)
+        return str(self.render_ui())
+        # return str(self.board)
 
     def render(self):
         point_width = 32

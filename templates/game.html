@@ -1,0 +1,41 @@
+<html>
+    <body>
+        <table>
+            <tr>
+                {% for p in range(13,25) %}
+                    <th width="20">{{p}}</th>
+                {% endfor %}
+                <th width="20">bar</th>
+            </tr>
+            {% for row in board %}
+                <tr>
+                    {% for c in row%}
+                        <th width="20">{{c}}</th>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            <tr>
+                {% for p in range(12) %}
+                    <th width="20">{{12-p}}</th>
+                {% endfor %}
+                <th width="20">bar</th>
+            </tr>
+        </table>
+        <p>Examples of legal moves:<br>24/22<br>19/16<br>4/off<br>bar/23</p>
+        <form action='/game' method = "POST">
+            <br>
+            Your move:<br>
+            <input type="text" name="move">
+            <!-- <input type="submit" value="submit" /> -->
+        </form>
+        {% if error_message %}
+        <p style="color: red">{{error_message}}</p>
+        {% endif %}
+        <br>
+        <br>
+        <a href="/game" class="button">Move AI</a>
+        <br>
+        <br>
+        <a href="/" class="button">New Game</a>
+    </body>
+</html>

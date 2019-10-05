@@ -41,7 +41,7 @@ class Environment:
             self.loser = 0 if self.winner == 1 else 1
             if self.board.board[self.loser, 0] == 0:
                 self.score *= 2 # gammon
-            if self.board.board[self.loser, 0] == 0 and self.board.board[self.loser, 19:].sum() > 1:
+            elif self.board.board[self.loser, 0] == 0 and self.board.board[self.loser, 19:].sum() > 1:
                 self.score *= 3 # backgammon
         self.player_to_move = 0 if self.player_to_move == 1 else 1
         return self.board

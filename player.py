@@ -12,15 +12,14 @@ from move import Moves
 
 
 class Player:
-    def __init__(self, player, env, random=False):
+    def __init__(self, player, random=False):
         self.player = player
-        self.env = env
         self.random = random
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01 # min exploration rate
         self.epsilon_decay = 0.99
         self.learning_rate = 0.005
-        self.gamma = 0.85  # discount rate
+        self.gamma = 0.85  # discount rate -> 0.7 in paper
         self.memory = deque(maxlen=10000) # ~ last 100games of 100 moves
         self.model = self._build_model() if not self.random else None
         
@@ -33,7 +32,8 @@ class Player:
             
     def _build_model(self):
         model = Sequential()
-        state_shape = self.env.board.board.reshape(-1).shape
+        # state_shape = self.env.board.board.reshape(-1).shape
+        state_shape = (52,)
         # print("Shape:",state_shape)
         model.add(Dense(40, input_shape=state_shape, activation="relu"))
         # model.add(Dense(24, activation="tanh"))
@@ -66,7 +66,7 @@ class Player:
     #     self.memory.append([state, action, reward, new_state, done])
 
     def remember(self, state, reward, next_state, done):
-        self.memory.append([state, reward, next_state, done])
+        self.memory.append([state, reward, next_state, done]) # remember more next_states?
 
     def remember_game(self, board_history, winner, score):
         # winner = 0 or 1
@@ -99,10 +99,13 @@ class Player:
             else:
                 Q_future = self.model.predict(next_board.flat())[0][0]
                 target = reward + Q_future * self.gamma
+                # Q_futures = [self.model.predict(board.flat())[0][0] for board in next_boards]
+                # target = reward + sum(Q_future * self.gamma**k for k, Q_future in enumerate(Q_futures))
             self.model.fit(board.flat(), np.array([[target]]), epochs=1, verbose=0)
 
     def load_model(self, filename):
         self.model = load_model(filename)
+        self.model._make_predict_function()
         self.random = False
         self.epsilon = 0
 
