@@ -12,7 +12,7 @@ ai_can_move = False
 ai = Player(1, random=False)
 ai.load_model("run3/gen_10.h5")
 
-@app.route('/')
+@app.route('/', methods=['GET','POST'])
 def home():
     global board
     global ai_can_move
@@ -70,4 +70,4 @@ def start_game():
     return render_template("game.html", board=board.render_ui(), error_message=None)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True) # port=environ.get("PORT", 5000), 
+    app.run(host='0.0.0.0', debug=False) # port=environ.get("PORT", 5000), 
