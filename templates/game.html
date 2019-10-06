@@ -1,6 +1,13 @@
+<!DOCTYPE html>
 <html>
+    <head>
+        <title>Backgammon AI</title>
+        
+    </head>
     <body>
-        <table>
+        <h1 style="text-align:center;">Backgammon AI</h1>
+        <p style="text-align:center;">You play the 'O' checkers, the AI plays 'X'</p>
+        <table align="center">
             <tr>
                 {% for p in range(13,25) %}
                     <th width="20">{{p}}</th>
@@ -21,19 +28,19 @@
                 <th width="20">bar</th>
             </tr>
         </table>
-        <p>Examples of legal moves:<br>24/22<br>19/16<br>4/off<br>bar/23</p>
-        <form action='/game' method = "POST">
+        <p style="text-align:center;"> Examples of legal moves:<br>24/22<br>19/16<br>4/off<br>bar/23</p>
+        <form action='/game' method = "POST" style="text-align:center;">
             <br>
             Your move:<br>
             <input type="text" name="move">
             <!-- <input type="submit" value="submit" /> -->
         </form>
         {% if error_message %}
-        <p style="color: red">{{error_message}}</p>
+        <p style="color: red" align="center">{{error_message}}</p>
         {% endif %}
-        <a href="/game" class="button">Move AI</a>
+        <center><a href="/game" class="button">Move AI</a></center>
         <br>
         <br>
-        <a href="/" class="button">New Game</a>
+        <center><a href="/" class="button">New Game</a></center>
     </body>
 </html>
