@@ -70,4 +70,5 @@ def start_game():
     return render_template("game.html", board=board.render_ui(), error_message=None)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=False) # port=environ.get("PORT", 5000), 
+    # app.run(host='0.0.0.0', debug=True) # port=environ.get("PORT", 5000), 
+    app.run()
