@@ -3,7 +3,6 @@ Describes the board
 """
 
 import numpy as np
-from tkinter import *
 from move import Move, Moves
 from itertools import product
 
@@ -181,43 +180,43 @@ class Board:
         return str(self.render_ui())
         # return str(self.board)
 
-    def render(self):
-        point_width = 32
-        board_width = 12*point_width
-        board_height = 300
+    # def render(self):
+    #     point_width = 32
+    #     board_width = 12*point_width
+    #     board_height = 300
 
-        master = Tk()
+    #     master = Tk()
 
-        w = Canvas(master, width=board_width, height=board_height)
-        w.pack()
+    #     w = Canvas(master, width=board_width, height=board_height)
+    #     w.pack()
 
-        # Draw quadrants 
-        w.create_rectangle(0, 0, board_width/2, board_height/2, fill="#222222")
-        w.create_rectangle(board_width/2, 0, board_width, board_height/2, fill="#444444")
-        w.create_rectangle(0, board_height/2, board_width/2, board_height, fill="#444444")
-        w.create_rectangle(board_width/2, board_height/2, board_width, board_height, fill="#444444")
+    #     # Draw quadrants 
+    #     w.create_rectangle(0, 0, board_width/2, board_height/2, fill="#222222")
+    #     w.create_rectangle(board_width/2, 0, board_width, board_height/2, fill="#444444")
+    #     w.create_rectangle(0, board_height/2, board_width/2, board_height, fill="#444444")
+    #     w.create_rectangle(board_width/2, board_height/2, board_width, board_height, fill="#444444")
         
-        # Draw points
-        for x in range(13,25):
-            xpnts = [0 + 32*(x-13), 0, 16 + 32*(x-13), 150, 32 + 32*(x-13), 0]
-            color = "#AA0000" if x % 2 == 0 else "#55524F"				
-            w.create_polygon(xpnts, fill=color)
-        for x in range(13,25):
-            xpnts = [0 + 32*(x-13), 300, 16 + 32*(x-13), 150, 32 + 32*(x-13), 300]
-            color = "#AA0000" if x % 2 != 0 else "#55524F"				
-            w.create_polygon(xpnts, fill=color)
+    #     # Draw points
+    #     for x in range(13,25):
+    #         xpnts = [0 + 32*(x-13), 0, 16 + 32*(x-13), 150, 32 + 32*(x-13), 0]
+    #         color = "#AA0000" if x % 2 == 0 else "#55524F"				
+    #         w.create_polygon(xpnts, fill=color)
+    #     for x in range(13,25):
+    #         xpnts = [0 + 32*(x-13), 300, 16 + 32*(x-13), 150, 32 + 32*(x-13), 300]
+    #         color = "#AA0000" if x % 2 != 0 else "#55524F"				
+    #         w.create_polygon(xpnts, fill=color)
 
-        # Draw checkers
-        for x in range(13,25):
-            xpnts = [0 + 32*(x-13), 0, 16 + 32*(x-13), 150, 32 + 32*(x-13), 0]
-            color = "#AA0000" if x % 2 == 0 else "#55524F"				
-            w.create_polygon(xpnts, fill=color)
-        for x in range(13,25):
-            xpnts = [0 + 32*(x-13), 300, 16 + 32*(x-13), 150, 32 + 32*(x-13), 300]
-            color = "#AA0000" if x % 2 != 0 else "#55524F"				
-            w.create_polygon(xpnts, fill=color)
-        # TODO: draw checkers on bar
-        mainloop()
+    #     # Draw checkers
+    #     for x in range(13,25):
+    #         xpnts = [0 + 32*(x-13), 0, 16 + 32*(x-13), 150, 32 + 32*(x-13), 0]
+    #         color = "#AA0000" if x % 2 == 0 else "#55524F"				
+    #         w.create_polygon(xpnts, fill=color)
+    #     for x in range(13,25):
+    #         xpnts = [0 + 32*(x-13), 300, 16 + 32*(x-13), 150, 32 + 32*(x-13), 300]
+    #         color = "#AA0000" if x % 2 != 0 else "#55524F"				
+    #         w.create_polygon(xpnts, fill=color)
+    #     # TODO: draw checkers on bar
+    #     mainloop()
 
 
 
