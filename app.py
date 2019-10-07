@@ -24,12 +24,13 @@ def home():
 def start_game():
     global board
     global ai_can_move
+    roll=[]
     # Your move, you are player 0
     if request.method == 'POST':
         player_move = request.form['move']
         # Check if valid entry:
         if "/" not in player_move:
-            return render_template("game.html", board=board.render_ui(), error_message="Your move must be in the form of number/number such as 24/22")
+            return render_template("game.html", board=board.render_ui(), roll=roll, error_message="Your move must be in the form of number/number such as 24/22")
         start = player_move.split("/")[0]
         finish = player_move.split("/")[1]
         blot = False
@@ -39,35 +40,36 @@ def start_game():
         bearing_off = board.board[0, 7:].sum() == 0
         # Check if legal move:
         if start < 0 or start > 25 or finish < 0 or finish > 25:
-            return render_template("game.html", board=board.render_ui(), error_message="Start and finish points must be in the interval [0,25]")
+            return render_template("game.html", board=board.render_ui(), roll=roll, error_message="Start and finish points must be in the interval [0,25]")
         if start <= finish:
-            return render_template("game.html", board=board.render_ui(), error_message="Start point must be greater than finish point")
+            return render_template("game.html", board=board.render_ui(), roll=roll, error_message="Start point must be greater than finish point")
         elif roll > 6:
-            return render_template("game.html", board=board.render_ui(), error_message="You cannot move a checker more than 6 points at a time (roll of dice)")
+            return render_template("game.html", board=board.render_ui(), roll=roll, error_message="You cannot move a checker more than 6 points at a time (roll of dice)")
         elif start != 25 and board.board[0, 25] > 0:
-            return render_template("game.html", board=board.render_ui(), error_message="You have a checker on the bar")
+            return render_template("game.html", board=board.render_ui(), roll=roll, error_message="You have a checker on the bar")
         elif board.board[0, start] == 0:
-            return render_template("game.html", board=board.render_ui(), error_message="You don't have any checker on this point")
+            return render_template("game.html", board=board.render_ui(), roll=roll, error_message="You don't have any checker on this point")
         elif not bearing_off and finish == 0:
-            return render_template("game.html", board=board.render_ui(), error_message="You cannot bear off yet")
+            return render_template("game.html", board=board.render_ui(), roll=roll, error_message="You cannot bear off yet")
         elif board.board[1, 25-finish] > 1:
-            return render_template("game.html", board=board.render_ui(), error_message="Your opponent has checkers on this point")
+            return render_template("game.html", board=board.render_ui(), roll=roll, error_message="Your opponent has checkers on this point")
         # Check if blot
         if board.board[1, 25-finish] == 1:
             blot = True
         move = Move(start, roll, blot=blot)
         board = board.step(0, move)
-        return render_template("game.html", board=board.render_ui(), error_message=None)
+        return render_template("game.html", board=board.render_ui(), roll=roll, error_message=None)
     # AI plays
     if ai_can_move:
         if board.is_game_over():
-            return render_template("game.html", board=board.render_ui(), error_message="Game over!")
+            return render_template("game.html", board=board.render_ui(), roll=roll, error_message="Game over!")
         roll = ai.roll()
         ai_action = ai.act(board, roll)
         for ai_move in ai_action:
             board = board.step(ai.player, ai_move)
     ai_can_move = True
-    return render_template("game.html", board=board.render_ui(), error_message=None)
+    roll = np.random.randint(1, 7, size=2)
+    return render_template("game.html", board=board.render_ui(), roll=roll, error_message=None)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True) # port=environ.get("PORT", 5000), 
