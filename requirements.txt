@@ -3,7 +3,7 @@ astor==0.8.0
 certifi==2022.12.7
 Click==7.0
 cycler==0.10.0
-Flask==1.1.1
+Flask==2.3.2
 gast==0.2.2
 grpcio==1.16.1
 h5py==2.9.0
