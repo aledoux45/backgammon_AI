@@ -10,65 +10,87 @@ class Environment:
         self.board = Board()
         self.board_history = []
         self.moves_history = []
-        self.done = False
+        self.player_to_move = np.random.randint(2, size=1)[0]
+
+        # Result
+        self.game_over = False
         self.score = 1
         self.winner = None
         self.loser = None
-        self.player_to_move = np.random.randint(2, size=1)[0]
 
     def reset(self):
         self.board = Board()
         self.board_history = []
         self.moves_history = []
-        self.done = False
+        self.player_to_move = np.random.randint(2, size=1)[0]
+    
+        # Result
+        self.game_over = False
         self.score = 1
         self.winner = None
         self.loser = None
-        self.player_to_move = np.random.randint(2, size=1)[0]
 
     def step(self, action):
         """
         Moves the environment one step forward (t+=1)
+        action = Moves object
         """
-        # action = Moves object
         for move in action:
             self.board = self.board.step(self.player_to_move, move)
+        
         if not self.board.is_valid():
             raise ValueError("Invalid board")
+        
         if self.board.is_game_over():
-            self.done = True 
-            self.winner = self.player_to_move
-            self.loser = 0 if self.winner == 1 else 1
+            self.game_over = True 
+            # Who won?
+            if self.board.board[0,1:].sum() == 0:
+                self.winner = 0
+                self.loser = 1
+            else:
+                self.winner = 1
+                self.loser = 0
+            # Gammon
             if self.board.board[self.loser, 0] == 0:
-                self.score *= 2 # gammon
-            elif self.board.board[self.loser, 0] == 0 and self.board.board[self.loser, 19:].sum() > 1:
-                self.score *= 3 # backgammon
+                self.score *= 2
+            # Backgammon
+            elif self.board.board[self.loser, 0] == 0 and np.sum(self.board.board[self.loser, 19:]) > 1:
+                self.score *= 3
         self.player_to_move = 0 if self.player_to_move == 1 else 1
         return self.board
 
     def play_game(self, player1, player2, verbose=True):
         """
         Play game between two players
+        player1 = 0
+        player2 = 1
+        action = Moves object
         """
         self.reset()
         cur_board = self.board
+        if player1.player != 0 or player2.player != 1:
+            raise ValueError("Must have Player 0 and 1")
 
-        while not self.done:
+        while not self.game_over:
             if self.player_to_move == 0:
-                # print("-- White:")
-                roll = player1.roll()
-                action = player1.act(cur_board, roll)
+                rolls = player1.roll()
+                action = player1.act(cur_board, rolls)
+                if verbose:
+                    print("-- White:")
             else:
-                # print("-- Black:")
-                roll = player2.roll()
-                action = player2.act(cur_board, roll)
+                
+                rolls = player2.roll()
+                action = player2.act(cur_board, rolls)
+                if verbose:
+                    print("-- Black:")
 
-            # print("roll:", roll)
-            # print("move:", action)
             self.board_history.append(self.board.copy())
             self.moves_history.append(action)
             cur_board = self.step(action)
-            # print(cur_board)
+            if verbose:
+                print("roll:", rolls)
+                print("move:", action)
+                print(cur_board)
 
         # Print game
         if verbose:
@@ -78,13 +100,15 @@ class Environment:
                 print("Black wins!")
 
             # Print game moves
-            i=0
+            print()
+            print("------ GAME SUMMARY ------")
+            i = 0
             while i < len(self.moves_history):
                 if len(self.moves_history) == i+1:
                     print(str(i) + "/ " + str(self.moves_history[i]))
                 else:
                     print(str(i) + "/ " + str(self.moves_history[i]) + "\t" + str(self.moves_history[i+1]))
-                i+=2
+                i += 2
     
     def check_performance(self, player1, player2, num_games):
         """
@@ -95,5 +119,6 @@ class Environment:
         success = 0
         for test_game in range(num_games):
             self.play_game(player1, player2, verbose=False)
-            success += self.loser
-        return success/num_games
+            if self.winner == player1.player:
+                success += 1
+        return success / num_games

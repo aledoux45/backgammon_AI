@@ -10,9 +10,11 @@ from itertools import product
 class Board:
     def __init__(self, board=None):
         if board is None:
-            self.board = np.zeros((2,26), dtype=np.int32)
+            # The board is represented by a 2x26 array
             # 0 = home
             # 25 = bar
+            self.board = np.zeros((2,26), dtype=np.int32)
+            # initial positions
             self.board[:,24] = [2,2]
             self.board[:,13] = [5,5]
             self.board[:,8] = [3,3]
@@ -54,92 +56,102 @@ class Board:
         return Board(self.board)
         
     def flat(self):
-        return np.expand_dims(self.board.reshape(-1), axis=0) 
+        return self.board.reshape(1,52)
     
     def flip(self):
         return Board(np.flip(self.board, axis=0))
 
     def step(self, player, move):
-        # player = 0 or 1
+        """
+        Gives the next board after move
+        player = 0 or 1
+        move = Move or Moves object
+        """
         other_player = 0 if player == 1 else 1
         next_board = self.board.copy()
 
-        next_board[player,move.point] -= 1
-        next_board[player,move.endpoint] += 1
-        if move.blot:
-            next_board[other_player, 25-move.endpoint] -= 1
-            next_board[other_player, 25] += 1 # chcker to bar
+        if isinstance(move, Move):
+            next_board[player,move.startpoint] -= 1
+            next_board[player,move.endpoint] += 1
+            if move.blot:
+                next_board[other_player, 25 - move.endpoint] -= 1
+                next_board[other_player, 25] += 1 
+        else:
+            for m in move:
+                next_board[player,m.startpoint] -= 1
+                next_board[player,m.endpoint] += 1
+                if m.blot:
+                    next_board[other_player, 25 - m.endpoint] -= 1
+                    next_board[other_player, 25] += 1 
+
         return Board(next_board)
 
-    def _legal_moves_1(self, player, roll):
-        # player = 0 or 1
-        # roll = 3
+    def legal_moves_1(self, player, roll):
+        """
+        Gives the legal move for 1 roll
+        player = 0 or 1
+        roll = int in [1;6]
+        output = List[Move]
+        """
         other_player = 0 if player == 1 else 1
         legal_moves = []
 
         # Checkers on bar
-        if self.board[player, 25] != 0: 
-            if self.board[other_player, roll] == 0:
-                legal_moves.append(Move(25,roll))
-            elif self.board[other_player, roll] == 1:
-                legal_moves.append(Move(25,roll,blot=True))
+        if self.board[player, 25] != 0:
+            endpoint = 25 - roll
+            if endpoint > 0 and self.board[other_player, 25-endpoint] == 0:
+                legal_moves.append(Move(25, endpoint))
+            elif endpoint > 0 and self.board[other_player, 25-endpoint] == 1:
+                legal_moves.append(Move(25, endpoint, blot=True))
         else:
-            bearing_off = self.board[player, 7:].sum() == 0
-            for i in range(1, 25):
-                if self.board[player, i] != 0:
-                    if i-roll > 0 and self.board[other_player, 25-i+roll] == 0:
-                        legal_moves.append(Move(i,roll))
-                    elif i-roll > 0 and self.board[other_player, 25-i+roll] == 1:
-                        legal_moves.append(Move(i,roll,blot=True))
-                    elif i-roll <= 0 and bearing_off:
-                        legal_moves.append(Move(i,roll))
+            bearing_off = np.sum(self.board[player, 7:]) == 0
+            for point in range(24, 0, -1):
+                if self.board[player, point] != 0:
+                    endpoint = point - roll
+                    if endpoint > 0 and self.board[other_player, 25-endpoint] == 0:
+                        legal_moves.append(Move(point, endpoint))
+                    elif endpoint > 0 and self.board[other_player, 25-endpoint] == 1:
+                        legal_moves.append(Move(point, endpoint, blot=True))
+                    elif endpoint <= 0 and bearing_off:
+                        legal_moves.append(Move(point, 0))
+        return legal_moves
+
+    def legal_moves_n(self, player, rolls):
+        """
+        Gives the legal moves for several rolls of dice IN THE ORDER GIVEN
+        player = 0 or 1
+        rolls = List[int] in [1;6]
+        output = List[List[Move]]
+        """
+        if len(rolls) == 0:
+            return [ [] ]
+        
+        l_moves1 = self.legal_moves_1(player, rolls[0])
+        if len(l_moves1) == 0:
+            return [ [] ]
+        if len(rolls) == 1:
+            return [[m] for m in l_moves1]
+        
+        legal_moves = []
+        for move in l_moves1:
+            next_board = self.step(player, move)
+            next_moves = next_board.legal_moves_n(player, rolls[1:])
+            legal_moves += [[move] + moves for moves in next_moves]
+        
         return legal_moves
 
     def legal_moves(self, player, rolls):
-        legal_moves = []
+        # returns a list of Moves object
         if len(rolls) == 2:
-            # first order
-            lm1 = self._legal_moves_1(player, rolls[0])
-            for m1 in lm1:
-                next_board = self.step(player, m1)
-                lm2 = next_board._legal_moves_1(player, rolls[1])
-                if len(lm2) > 0:
-                    for m2 in lm2:
-                        legal_moves.append(Moves([m1, m2], rolls))
-                else:
-                    legal_moves.append(Moves([m1], rolls))
-            # second order
-            lm1 = self._legal_moves_1(player, rolls[1])
-            for m1 in lm1:
-                next_board = self.step(player, m1)
-                lm2 = next_board._legal_moves_1(player, rolls[0])
-                if len(lm2) > 0:
-                    for m2 in lm2:
-                        legal_moves.append(Moves([m1, m2], rolls))
-                else:
-                    legal_moves.append(Moves([m1], rolls))
-        else: # doubles
-            legal_moves1 = self._legal_moves_1(player, rolls[0])
-            for vm1 in legal_moves1:
-                next_board1 = self.step(player, vm1)
-                legal_moves2 = next_board1._legal_moves_1(player, rolls[1])
-                if len(legal_moves2) > 0:
-                    for vm2 in legal_moves2:
-                        next_board2 = next_board1.step(player, vm2)
-                        legal_moves3 = next_board2._legal_moves_1(player, rolls[2])
-                        if len(legal_moves3) > 0:
-                            for vm3 in legal_moves3:
-                                next_board3 = next_board2.step(player, vm3)
-                                legal_moves4 = next_board3._legal_moves_1(player, rolls[3])
-                                if len(legal_moves4) > 0:
-                                    for vm4 in legal_moves4:
-                                        legal_moves.append(Moves([vm1,vm2,vm3,vm4], rolls))
-                                else:
-                                    legal_moves.append(Moves([vm1,vm2,vm3], rolls))
-                        else:
-                            legal_moves.append(Moves([vm1,vm2], rolls))
-                else:
-                    legal_moves.append(Moves([vm1], rolls))
+            # order can matter
+            legal_moves1 = self.legal_moves_n(player, [rolls[0],rolls[1]] )
+            legal_moves2 = self.legal_moves_n(player, [rolls[1],rolls[0]] )
+            legal_moves = legal_moves1 + legal_moves2
+        else: 
+            # roll doubles
+            legal_moves = self.legal_moves_n(player, rolls)
+
+        legal_moves = [Moves(m, rolls) for m in legal_moves]
         # only keep unique moves
         unique_legal_moves = []
         for lm in legal_moves:
@@ -177,46 +189,8 @@ class Board:
         return board_to_print
 
     def __str__(self):
-        return str(self.render_ui())
-        # return str(self.board)
-
-    # def render(self):
-    #     point_width = 32
-    #     board_width = 12*point_width
-    #     board_height = 300
-
-    #     master = Tk()
-
-    #     w = Canvas(master, width=board_width, height=board_height)
-    #     w.pack()
-
-    #     # Draw quadrants 
-    #     w.create_rectangle(0, 0, board_width/2, board_height/2, fill="#222222")
-    #     w.create_rectangle(board_width/2, 0, board_width, board_height/2, fill="#444444")
-    #     w.create_rectangle(0, board_height/2, board_width/2, board_height, fill="#444444")
-    #     w.create_rectangle(board_width/2, board_height/2, board_width, board_height, fill="#444444")
-        
-    #     # Draw points
-    #     for x in range(13,25):
-    #         xpnts = [0 + 32*(x-13), 0, 16 + 32*(x-13), 150, 32 + 32*(x-13), 0]
-    #         color = "#AA0000" if x % 2 == 0 else "#55524F"				
-    #         w.create_polygon(xpnts, fill=color)
-    #     for x in range(13,25):
-    #         xpnts = [0 + 32*(x-13), 300, 16 + 32*(x-13), 150, 32 + 32*(x-13), 300]
-    #         color = "#AA0000" if x % 2 != 0 else "#55524F"				
-    #         w.create_polygon(xpnts, fill=color)
-
-    #     # Draw checkers
-    #     for x in range(13,25):
-    #         xpnts = [0 + 32*(x-13), 0, 16 + 32*(x-13), 150, 32 + 32*(x-13), 0]
-    #         color = "#AA0000" if x % 2 == 0 else "#55524F"				
-    #         w.create_polygon(xpnts, fill=color)
-    #     for x in range(13,25):
-    #         xpnts = [0 + 32*(x-13), 300, 16 + 32*(x-13), 150, 32 + 32*(x-13), 300]
-    #         color = "#AA0000" if x % 2 != 0 else "#55524F"				
-    #         w.create_polygon(xpnts, fill=color)
-    #     # TODO: draw checkers on bar
-    #     mainloop()
+        # return str(self.render_ui())
+        return str(self.board)
 
 
 

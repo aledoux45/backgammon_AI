@@ -5,60 +5,68 @@ Describes a player
 import numpy as np
 from collections import deque
 import random
-from keras.models import Sequential, load_model
-from keras.layers import Dense
-from keras.optimizers import Adam
 from move import Moves
+import torch
 
 
 class Player:
     def __init__(self, player, random=False):
         self.player = player
         self.random = random
-        self.epsilon = 1.0  # exploration rate
-        self.epsilon_min = 0.01 # min exploration rate
-        self.epsilon_decay = 0.99
+
+        ## NN
+        self.hidden_units = 40
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+        self.epsilon = 0.9  # exploration rate
+        self.epsilon_min = 0.05 # min exploration rate
+        self.epsilon_decay = 0.99 # 200
         self.learning_rate = 0.005
         self.gamma = 0.85  # discount rate -> 0.7 in paper
         self.memory = deque(maxlen=10000) # ~ last 100games of 100 moves
         self.model = self._build_model() if not self.random else None
         
     def roll(self):
-        roll = np.random.randint(1, 7, size=2)
-        if roll[0] == roll[1]:
-            return np.hstack([roll, roll])
+        rolls = np.random.randint(1, 7, size=2)
+        if rolls[0] == rolls[1]:
+            return np.hstack([rolls, rolls]).tolist()
         else:
-            return roll
+            return rolls.tolist()
             
     def _build_model(self):
-        model = Sequential()
-        # state_shape = self.env.board.board.reshape(-1).shape
-        state_shape = (52,)
-        # print("Shape:",state_shape)
-        model.add(Dense(40, input_shape=state_shape, activation="relu"))
-        # model.add(Dense(24, activation="tanh"))
-        # model.add(Dense(24, activation="tanh"))
-        model.add(Dense(1))
-        model.compile(loss="mean_squared_error", optimizer=Adam(lr=self.learning_rate))
-        model.summary()
+        model = torch.nn.Sequential(
+            torch.nn.Linear(52, self.hidden_units), # input = (N, H_in)
+            torch.nn.ReLU(),
+            torch.nn.Linear(self.hidden_units, 1),
+        )
         return model
 
+    def score(self, board):
+        """
+        Evaluates a board
+        """
+        nn_input = torch.FloatTensor(board.flat())
+        score = self.model(nn_input)
+        return score.item()
+
     def act(self, board, rolls):
+        """
+        legal_moves = List[Moves]
+        """
         legal_moves = board.legal_moves(self.player, rolls)
         if len(legal_moves) == 0:
             return Moves([], rolls)
+        elif len(legal_moves) == 1:
+            return legal_moves[0]
         # add randomness of choice
         if np.random.random() < self.epsilon or self.random:
-            choice = random.sample(legal_moves, 1)[0]
+            choice = random.choice(legal_moves)
             return choice
         else: # choose board with highest score
             scores = []
-            for lm in legal_moves:
-                for move in lm:
-                    next_board = board.step(self.player, move)
-                score = self.model.predict(next_board.flat())[0][0]
-                # print("LM:", lm)
-                # print("Score:", score)
+            for move in legal_moves:
+                next_board = board.step(self.player, move)
+                score = self.score(next_board)
                 scores.append(score)
             return legal_moves[np.argmax(scores)]
 
@@ -69,10 +77,14 @@ class Player:
         self.memory.append([state, reward, next_state, done]) # remember more next_states?
 
     def remember_game(self, board_history, winner, score):
-        # winner = 0 or 1
-        # board_history = list of Board objects
+        """
+        winner = 0 or 1
+        board_history = List[Board]
+        score = 
+        """
         for i in range(len(board_history)-1):
             if winner == self.player:
+                # state, reward, next_state, done
                 self.remember(board_history[i], score, board_history[i+1], False)
                 # self.remember(board_history[i].flip(), -score, board_history[i+1].flip(), False)
             else:
@@ -86,28 +98,61 @@ class Player:
             self.remember(board_history[-1], -score, None, True)
             # self.remember(board_history[-1].flip(), score, None, True)
         
-    def replay(self, batch_size=32):
+    def replay(self, batch_size):
+        loss_fn = torch.nn.MSELoss(reduction='sum')
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
+
         self.epsilon *= self.epsilon_decay
         self.epsilon = max(self.epsilon_min, self.epsilon)
         if len(self.memory) < batch_size: 
             return
         samples = random.sample(self.memory, batch_size)
+        # boards = torch.cat([torch.FloatTensor(b.flat()) for b, r, next_b, d in samples])
+        # next_boards = torch.cat([torch.FloatTensor(next_b.flat()) for b, r, next_b, d in samples])
+        # rewards = torch.FloatTensor([r for b, r, next_b, d in samples])
+        # targets = []
+        # print("STH:", board.shape)
+        # print("STH:", rewards.shape)
+        
         for sample in samples:
             board, reward, next_board, done = sample
             if done:
                 target = reward
             else:
-                Q_future = self.model.predict(next_board.flat())[0][0]
-                target = reward + Q_future * self.gamma
-                # Q_futures = [self.model.predict(board.flat())[0][0] for board in next_boards]
-                # target = reward + sum(Q_future * self.gamma**k for k, Q_future in enumerate(Q_futures))
-            self.model.fit(board.flat(), np.array([[target]]), epochs=1, verbose=0)
+                nn_input = torch.FloatTensor(next_board.flat())
+                Q_future = self.model(nn_input)
+                target = torch.FloatTensor([reward + Q_future.item() * self.gamma])
+            
+                # fit model
+                self.model.train()  # set model to "training" mode (dropout ON)
+                
+                optimizer.zero_grad()
+                
+                nn_input = torch.FloatTensor(board.flat())
+                out = self.model(nn_input)
+
+                loss = loss_fn(out, target)
+                # loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
+
+                loss.backward()
+                optimizer.step()
+
+            # trail_loss += loss.item() ### IMPORTANT otherwise problem of memory leak
+            # Regularization
+            # if not self.config.bert and self.config.reg_lambda is not None:
+            #     l2_reg = torch.tensor(0.)
+            #     for W in model.parameters():
+            #         if W.size(0) == 2:
+            #             l2_reg += W.norm(2)
+            #     loss += self.config.reg_lambda * l2_reg
+
+
 
     def load_model(self, filename):
-        self.model = load_model(filename)
-        self.model._make_predict_function()
+        self.model = torch.load(filename)
         self.random = False
         self.epsilon = 0
+        return self
 
     def save_model(self, outputfile):
-        self.model.save(outputfile)
+        torch.save(self.model, outputfile)
